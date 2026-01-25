@@ -1,0 +1,24 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/myapi}
+    username: ${DB_USER:myapi}
+    password: ${DB_PASSWORD:myapi}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:#~?Xb-:ga7H2SFCG4]UA(Y?]f8XN]~M4&}Eg,_i[j}575};29uqgp-tMB:C}F,68}
+    accessTtlMinutes: ${JWT_ACCESS_TTL_MIN:15}
+    refreshTtlDays: ${JWT_REFRESH_TTL_DAYS:14}
