@@ -18,10 +18,12 @@ jobs:
           java-version: "25"
           cache: gradle
 
-      # Jeśli masz wrappera (gradlew) — super, używamy go.
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
       - name: Build (Gradle)
         run: ./gradlew clean build -x test
-
+        
       - name: Upload jar to server (temp)
         uses: appleboy/scp-action@v0.1.7
         with:
