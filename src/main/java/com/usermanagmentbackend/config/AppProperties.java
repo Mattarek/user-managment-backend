@@ -8,6 +8,7 @@ public record AppProperties(
 		PasswordReset passwordReset,
 		Mail mail
 ) {
+
 	public record Jwt(String secret, int accessTtlMinutes, int refreshTtlDays) {
 	}
 

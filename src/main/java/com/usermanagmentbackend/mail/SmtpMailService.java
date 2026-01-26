@@ -1,8 +1,11 @@
 package com.usermanagmentbackend.mail;
 
 import com.usermanagmentbackend.config.AppProperties;
-import org.springframework.mail.SimpleMailMessage;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 
 public class SmtpMailService implements MailService {
 	private final JavaMailSender mailSender;
@@ -15,11 +18,39 @@ public class SmtpMailService implements MailService {
 
 	@Override
 	public void sendPasswordReset(final String toEmail, final String link) {
-		final SimpleMailMessage msg = new SimpleMailMessage();
-		msg.setFrom(props.mail().from());
-		msg.setTo(toEmail);
-		msg.setSubject("Reset hasła");
-		msg.setText("Kliknij link:\n" + link);
-		mailSender.send(msg);
+		final MimeMessage message = mailSender.createMimeMessage();
+
+		try {
+			final MimeMessageHelper helper =
+					new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
+
+			helper.setFrom(props.mail().from());
+			helper.setTo(toEmail);
+			helper.setSubject("Reset your password");
+
+			// Plain-text fallback
+			final String text = """
+					Reset your password
+					
+					We received a request to reset the password for your account.
+					Use the link below to choose a new password:
+					
+					%s
+					
+					If you didn’t request a password reset, you can safely ignore this email.
+					""".formatted(link);
+
+			// HTML body
+			final String html = PasswordResetTemplate.html(
+					"DoctorsApp",
+					link
+			);
+
+			helper.setText(text, html);
+
+			mailSender.send(message);
+		} catch (final MessagingException e) {
+			throw new MailSendException("Failed to send password reset email to " + toEmail, e);
+		}
 	}
 }
