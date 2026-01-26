@@ -27,8 +27,6 @@ public class SmtpMailService implements MailService {
 			helper.setFrom(props.mail().from());
 			helper.setTo(toEmail);
 			helper.setSubject("Reset your password");
-			System.out.println("SENDING HTML RESET MAIL (v2) to=" + toEmail);
-
 			final String text = """
 					Reset your password
 					

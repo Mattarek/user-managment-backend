@@ -61,7 +61,6 @@ public class UsersServiceImpl implements UsersService {
 	@Override
 	@Transactional
 	public void remindPassword(final String email) {
-		// NIGDY nie ujawniamy czy konto istnieje.
 		userRepository.findByEmail(email.toLowerCase()).ifPresent(user -> {
 			final String raw = generateOpaqueToken();
 			final String hash = TokenHasher.sha256Hex(raw);
@@ -69,6 +68,7 @@ public class UsersServiceImpl implements UsersService {
 			passwordResetTokenRepository.save(new PasswordResetToken(user, hash, exp));
 
 			final String link = resetLinkBase + raw;
+			System.out.println(link);
 			mailService.sendPasswordReset(user.getEmail(), link);
 		});
 	}
