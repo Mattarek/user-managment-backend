@@ -1,5 +1,7 @@
 package com.usermanagmentbackend.mail;
 
+import java.time.Year;
+
 public class PasswordResetTemplate {
 
 	private PasswordResetTemplate() {
