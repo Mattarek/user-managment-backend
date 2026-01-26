@@ -33,7 +33,7 @@ public class SecurityConfig {
 								"/api/auth/refresh-token",
 								"/api/auth/logout",
 								"/api/users/remind-password",
-								"/actuator/health",
+								"/actuator/health/**",
 								"/actuator/info"
 						).permitAll()
 						.anyRequest().authenticated()
