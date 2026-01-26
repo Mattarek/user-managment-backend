@@ -27,8 +27,8 @@ public class SmtpMailService implements MailService {
 			helper.setFrom(props.mail().from());
 			helper.setTo(toEmail);
 			helper.setSubject("Reset your password");
+			System.out.println("SENDING HTML RESET MAIL (v2) to=" + toEmail);
 
-			// Plain-text fallback
 			final String text = """
 					Reset your password
 					
@@ -40,7 +40,6 @@ public class SmtpMailService implements MailService {
 					If you didn’t request a password reset, you can safely ignore this email.
 					""".formatted(link);
 
-			// HTML body
 			final String html = PasswordResetTemplate.html(
 					"DoctorsApp",
 					link
