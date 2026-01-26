@@ -23,7 +23,7 @@ jobs:
 
       - name: Build (Gradle)
         run: ./gradlew clean build -x test
-        
+
       - name: Upload jar to server (temp)
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -33,28 +33,3 @@ jobs:
           source: "build/libs/*.jar"
           target: "/opt/apps/myapi/"
           strip_components: 2
-
-      - name: Switch jar atomically + restart
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -euo pipefail
-            cd /opt/apps/myapi
-
-            # uwaga: build/libs często generuje też *-plain.jar itp.
-            # bierzemy najnowszy JAR i ignorujemy "plain"
-            NEW_JAR="$(ls -1t *.jar | grep -v -- '-plain\.jar$' | head -n 1)"
-
-            mv -f "$NEW_JAR" myapi.jar.new
-
-            if [ -f myapi.jar ]; then
-              cp -f myapi.jar myapi.jar.bak
-            fi
-
-            mv -f myapi.jar.new myapi.jar
-
-            sudo systemctl restart myapi
-            sudo systemctl --no-pager status myapi
