@@ -33,3 +33,25 @@ jobs:
           source: "build/libs/*.jar"
           target: "/opt/apps/myapi/"
           strip_components: 2
+          
+      - name: Activate new jar + restart service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/apps/myapi
+
+            # weź najnowszy jar, ale pomiń *-plain.jar
+            JAR="$(ls -1t *.jar | grep -v -- '-plain\.jar$' | head -n 1)"
+            echo "Using jar: $JAR"
+
+            # atomowa podmiana
+            sudo install -m 0644 "$JAR" /opt/apps/myapi/myapi.jar
+
+            # restart
+            sudo systemctl daemon-reload
+            sudo systemctl restart myapi
+            sudo systemctl --no-pager --full status myapi | tail -n 60
