@@ -6,16 +6,34 @@ spring:
     url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/myapi}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
+
   jpa:
     hibernate:
       ddl-auto: update
     open-in-view: false
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:25}
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,mappings
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
 
 app:
   jwt:
@@ -25,4 +43,9 @@ app:
 
   passwordReset:
     ttlMinutes: ${PASSWORD_RESET_TTL_MIN:15}
-    linkBase: "http://localhost:3000/reset-password?token="
+    linkBase: ${PASSWORD_RESET_LINK_BASE:https://doctorsapp.cfolks.pl/reset-password?token=}
+
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+    from: ${MAIL_FROM:noreply@doctorsapp.cfolks.pl}
+    replyTo: ${MAIL_REPLY_TO:noreply@doctorsapp.cfolks.pl}
