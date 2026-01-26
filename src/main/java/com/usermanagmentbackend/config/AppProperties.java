@@ -14,6 +14,6 @@ public record AppProperties(
 	public record PasswordReset(int ttlMinutes, String linkBase) {
 	}
 
-	public record Mail(boolean enabled, String from, String replyTo) {
+	public record Mail(boolean enabled, String from) {
 	}
 }
