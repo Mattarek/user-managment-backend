@@ -63,13 +63,13 @@ jobs:
 
             echo "Using jar: $JAR"
 
-            sudo /usr/bin/install -m 0644 "$JAR" /opt/apps/myapi/myapi.jar
+            sudo -n /usr/bin/install -m 0644 "$JAR" /opt/apps/myapi/myapi.jar
 
-            sudo /bin/systemctl daemon-reload
-            sudo /bin/systemctl restart myapi
+            sudo -n /bin/systemctl daemon-reload
+            sudo -n /bin/systemctl restart myapi
 
             echo "Service status:"
             sudo /bin/systemctl --no-pager --full status myapi | tail -n 80
 
             echo "Recent logs:"
-            sudo journalctl -u myapi -n 80 --no-pager || true
+            sudo -n journalctl -u myapi -n 80 --no-pager || true
