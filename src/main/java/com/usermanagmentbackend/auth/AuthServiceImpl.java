@@ -102,7 +102,6 @@ public class AuthServiceImpl implements AuthService {
 			throw new ApiException(HttpStatus.UNAUTHORIZED, "REFRESH_INVALID_OR_EXPIRED", "Refresh token invalid");
 		}
 
-		// Rotacja: unieważnij stary, wydaj nowy
 		existing.revoke(now);
 
 		final User user = existing.getUser();

@@ -19,13 +19,14 @@ public class JwtService {
 
 	private final SecretKey key;
 	private final int accessTtlMinutes;
+	private final int SECRET_LENGTH = 32;
 
 	public JwtService(
 			@Value("${app.jwt.secret}") final String secret,
 			@Value("${app.jwt.accessTtlMinutes}") final int accessTtlMinutes
 	) {
-		if (secret == null || secret.length() < 32) {
-			throw new IllegalStateException("app.jwt.secret must be at least 32 chars");
+		if (secret == null || secret.length() < SECRET_LENGTH) {
+			throw new IllegalStateException("app.jwt.secret must be at least " + SECRET_LENGTH + " chars");
 		}
 		key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 		this.accessTtlMinutes = accessTtlMinutes;
