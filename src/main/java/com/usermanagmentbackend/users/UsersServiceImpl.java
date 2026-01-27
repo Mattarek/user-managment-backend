@@ -48,11 +48,11 @@ public class UsersServiceImpl implements UsersService {
 	@Transactional(readOnly = true)
 	public MeResponse getMe() {
 		final var auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null || !(auth.getPrincipal() instanceof final CurrentUser cu)) {
+		if (auth == null || !(auth.getPrincipal() instanceof final CurrentUser currentUser)) {
 			throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized");
 		}
 
-		final var user = userRepository.findByEmail(cu.email().toLowerCase())
+		final var user = userRepository.findByEmail(currentUser.email().toLowerCase())
 				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized"));
 
 		return new MeResponse(user.getEmail(), user.getEmail(), user.getName(), user.getSurname());
