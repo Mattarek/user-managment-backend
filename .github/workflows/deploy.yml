@@ -4,9 +4,14 @@ on:
   push:
     branches: [ "main" ]
 
+concurrency:
+  group: myapi-deploy
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,10 +26,13 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build (Gradle)
-        run: ./gradlew clean build -x test
+      - name: Build (bootJar)
+        run: ./gradlew clean bootJar -x test
 
-      - name: Upload jar to server (temp)
+      - name: Show built jars
+        run: ls -lah build/libs
+
+      - name: Upload boot jar to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -33,7 +41,7 @@ jobs:
           source: "build/libs/*.jar"
           target: "/opt/apps/myapi/"
           strip_components: 2
-          
+
       - name: Activate new jar + restart service
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -42,16 +50,26 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -euo pipefail
-            cd /opt/apps/myapi
 
-            # weź najnowszy jar, ale pomiń *-plain.jar
+            cd /opt/apps/myapi
+            echo "Files on server:"
+            ls -lah
+
             JAR="$(ls -1t *.jar | grep -v -- '-plain\.jar$' | head -n 1)"
+            if [ -z "${JAR:-}" ]; then
+              echo "ERROR: No non-plain jar found in /opt/apps/myapi"
+              exit 1
+            fi
+
             echo "Using jar: $JAR"
 
-            # atomowa podmiana
-            sudo install -m 0644 "$JAR" /opt/apps/myapi/myapi.jar
+            sudo /usr/bin/install -m 0644 "$JAR" /opt/apps/myapi/myapi.jar
 
-            # restart
-            sudo systemctl daemon-reload
-            sudo systemctl restart myapi
-            sudo systemctl --no-pager --full status myapi | tail -n 60
+            sudo /bin/systemctl daemon-reload
+            sudo /bin/systemctl restart myapi
+
+            echo "Service status:"
+            sudo /bin/systemctl --no-pager --full status myapi | tail -n 80
+
+            echo "Recent logs:"
+            sudo journalctl -u myapi -n 80 --no-pager || true
