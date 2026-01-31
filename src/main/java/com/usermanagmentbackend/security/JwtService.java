@@ -34,7 +34,7 @@ public class JwtService {
 
 	public String createAccessToken(final User user) {
 		final Instant now = Instant.now();
-		final Instant exp = now.plusSeconds(accessTtlMinutes * 60L);
+		final Instant exp = now.plusSeconds(accessTtlMinutes * 5L);
 
 		return Jwts.builder()
 				.subject(user.getEmail())
