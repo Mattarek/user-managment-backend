@@ -13,7 +13,7 @@ public class CorsConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		final var cfg = new CorsConfiguration();
-		cfg.setAllowedOrigins(List.of("*")); // w prod ustaw konkretny origin frontu
+		cfg.setAllowedOrigins(List.of("*"));
 		cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		cfg.setAllowedHeaders(List.of("*"));
 		cfg.setAllowCredentials(false);

@@ -67,8 +67,7 @@ public class UsersServiceImpl implements UsersService {
 			final Instant exp = Instant.now().plus(resetTtlMinutes, ChronoUnit.MINUTES);
 			passwordResetTokenRepository.save(new PasswordResetToken(user, hash, exp));
 
-			final String link = resetLinkBase + raw;
-			System.out.println(link);
+			final String link = resetLinkBase + "/" + raw;
 			mailService.sendPasswordReset(user.getEmail(), link);
 		});
 	}
