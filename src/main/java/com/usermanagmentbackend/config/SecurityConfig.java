@@ -33,7 +33,9 @@ public class SecurityConfig {
 								"/api/auth/refresh-token",
 								"/api/auth/logout",
 								"/api/users/remind-password",
+								"/api/auth/reset-password",
 								"/api/users/reset-password",
+								"/api/auth/reset-password",
 								"/actuator/health/**",
 								"/actuator/info"
 						).permitAll()
