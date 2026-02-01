@@ -5,8 +5,11 @@ import com.usermanagmentbackend.auth.dto.LogoutRequest;
 import com.usermanagmentbackend.auth.dto.RefreshTokenRequest;
 import com.usermanagmentbackend.auth.dto.RegisterRequest;
 import com.usermanagmentbackend.auth.dto.RegisterResponse;
+import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
 import com.usermanagmentbackend.common.ApiException;
+import com.usermanagmentbackend.domain.reset.PasswordResetToken;
+import com.usermanagmentbackend.domain.reset.PasswordResetTokenRepository;
 import com.usermanagmentbackend.domain.token.RefreshToken;
 import com.usermanagmentbackend.domain.token.RefreshTokenRepository;
 import com.usermanagmentbackend.domain.user.User;
@@ -18,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -32,20 +36,21 @@ public class AuthServiceImpl implements AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
 	private final SecureRandom secureRandom = new SecureRandom();
-
+	private final PasswordResetTokenRepository passwordResetTokenRepository;
 	private final int refreshTtlDays;
 
 	public AuthServiceImpl(
 			final UserRepository userRepository,
 			final RefreshTokenRepository refreshTokenRepository,
 			final PasswordEncoder passwordEncoder,
-			final JwtService jwtService,
+			final JwtService jwtService, final PasswordResetTokenRepository passwordResetTokenRepository,
 			@Value("${app.jwt.refreshTtlDays}") final int refreshTtlDays
 	) {
 		this.userRepository = userRepository;
 		this.refreshTokenRepository = refreshTokenRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtService = jwtService;
+		this.passwordResetTokenRepository = passwordResetTokenRepository;
 		this.refreshTtlDays = refreshTtlDays;
 	}
 
@@ -126,5 +131,33 @@ public class AuthServiceImpl implements AuthService {
 		final byte[] buf = new byte[48];
 		secureRandom.nextBytes(buf);
 		return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
+	}
+
+	@Transactional
+	public ResetPasswordRequest resetPassword(final ResetPasswordRequest req) {
+		if (req == null || req.password() == null || req.token() == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
+		if (req.password().length() < 10) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password too short");
+		}
+
+		final String tokenHash = TokenHasher.sha256Hex(req.token());
+
+		final PasswordResetToken passwordResetToken = passwordResetTokenRepository
+				.findByTokenHash(tokenHash)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST));
+
+		if (passwordResetToken.getExpiresAt().isBefore(Instant.now())) {
+			passwordResetTokenRepository.delete(passwordResetToken);
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
+
+		final User user = passwordResetToken.getUser();
+		user.setPassword(passwordEncoder.encode(req.password()));
+		userRepository.save(user);
+
+		passwordResetTokenRepository.delete(passwordResetToken);
+		return req;
 	}
 }

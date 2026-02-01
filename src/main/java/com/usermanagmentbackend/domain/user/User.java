@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -56,5 +57,12 @@ public class User {
 
 	public String getPasswordHash() {
 		return passwordHash;
+	}
+
+	public void setPassword(@Nullable final String passwordHash) {
+		if (passwordHash == null || passwordHash.isBlank()) {
+			throw new IllegalArgumentException("Password hash cannot be null or blank");
+		}
+		this.passwordHash = passwordHash;
 	}
 }

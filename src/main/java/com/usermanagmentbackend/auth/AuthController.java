@@ -5,6 +5,7 @@ import com.usermanagmentbackend.auth.dto.LogoutRequest;
 import com.usermanagmentbackend.auth.dto.RefreshTokenRequest;
 import com.usermanagmentbackend.auth.dto.RegisterRequest;
 import com.usermanagmentbackend.auth.dto.RegisterResponse;
+import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -44,5 +45,11 @@ public class AuthController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void logout(@RequestBody @Valid final LogoutRequest req) {
 		authService.logout(req);
+	}
+
+	@PostMapping("/reset-password")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void resetPassword(@RequestBody final ResetPasswordRequest req) {
+		authService.resetPassword(req);
 	}
 }
