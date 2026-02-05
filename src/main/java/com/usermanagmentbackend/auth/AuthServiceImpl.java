@@ -17,12 +17,12 @@ import com.usermanagmentbackend.domain.token.RefreshTokenRepository;
 import com.usermanagmentbackend.domain.user.User;
 import com.usermanagmentbackend.domain.user.UserRepository;
 import com.usermanagmentbackend.mail.MailService;
+import com.usermanagmentbackend.security.CurrentUser;
 import com.usermanagmentbackend.security.JwtService;
 import com.usermanagmentbackend.util.TokenHasher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -218,19 +218,16 @@ public class AuthServiceImpl implements AuthService {
 		userRepository.save(user);
 	}
 
-	private User getCurrentUser() {
-		final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-		System.out.println("AUTH name = " + auth.getName());
-		System.out.println("AUTH principal = " + auth.getPrincipal());
-		System.out.println("AUTH class = " + auth.getPrincipal().getClass());
-
-		if (auth == null || auth.getName() == null) {
-			throw new IllegalStateException("User is not authenticated");
+	public User getCurrentUser() {
+		final var auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth == null || !(auth.getPrincipal() instanceof CurrentUser(java.util.UUID id, String email))) {
+			throw new IllegalStateException("Authenticated user not found");
 		}
 
-		return userRepository.findByEmailIgnoreCase(auth.getName())
-				.orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+		return userRepository.findById(id)
+				.orElseThrow(() -> new IllegalStateException(
+						"Authenticated user not found for id=" + id + ", email=" + email
+				));
 	}
 
 	@Override
