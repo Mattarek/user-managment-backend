@@ -13,6 +13,7 @@ import com.usermanagmentbackend.users.dto.RemindPasswordRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -65,7 +66,7 @@ public class AuthController {
 		return Map.of("message", "If account exists, email was sent.");
 	}
 
-	@PostMapping("/changePassword")
+	@PutMapping("/changePassword")
 	@ResponseStatus(HttpStatus.ACCEPTED)
 	public Map<String, String> changePassword(
 			@RequestBody @Valid final ChangePasswordRequest req
@@ -74,7 +75,7 @@ public class AuthController {
 		return Map.of("message", "Password changed successfully.");
 	}
 
-	@PostMapping("/updateProfile")
+	@PutMapping("/updateProfile")
 	@ResponseStatus(HttpStatus.ACCEPTED)
 	public Map<String, String> updateProfile(
 			@RequestBody @Valid final UpdateProfileRequest req
