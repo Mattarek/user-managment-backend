@@ -1,5 +1,6 @@
 package com.usermanagmentbackend.auth;
 
+import com.usermanagmentbackend.auth.dto.ChangePasswordRequest;
 import com.usermanagmentbackend.auth.dto.LoginRequest;
 import com.usermanagmentbackend.auth.dto.LogoutRequest;
 import com.usermanagmentbackend.auth.dto.RefreshTokenRequest;
@@ -7,6 +8,7 @@ import com.usermanagmentbackend.auth.dto.RegisterRequest;
 import com.usermanagmentbackend.auth.dto.RegisterResponse;
 import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
+import com.usermanagmentbackend.auth.dto.UpdateProfileRequest;
 import com.usermanagmentbackend.common.ApiException;
 import com.usermanagmentbackend.domain.reset.PasswordResetToken;
 import com.usermanagmentbackend.domain.reset.PasswordResetTokenRepository;
@@ -19,6 +21,9 @@ import com.usermanagmentbackend.security.JwtService;
 import com.usermanagmentbackend.util.TokenHasher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,16 +75,32 @@ public class AuthServiceImpl implements AuthService {
 		final String email = req.email().toLowerCase();
 
 		if (!req.password().equals(req.repeatedPassword())) {
-			throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PASSWORD_MISMATCH", "Passwords do not match");
+			throw new ApiException(
+					HttpStatusCode.valueOf(422),
+					"PASSWORD_MISMATCH",
+					"Passwords do not match"
+			);
 		}
+
 		if (userRepository.existsByEmail(email)) {
-			throw new ApiException(HttpStatus.CONFLICT, "EMAIL_TAKEN", "Email is already taken");
+			throw new ApiException(
+					HttpStatus.CONFLICT,
+					"EMAIL_TAKEN",
+					"Email is already taken"
+			);
 		}
 
 		final String hash = passwordEncoder.encode(req.password());
-		final User user = userRepository.save(new User(email, req.name(), req.surname(), hash));
+		final User user = userRepository.save(
+				new User(email, req.name(), req.surname(), hash)
+		);
 
-		return new RegisterResponse(user.getId(), user.getEmail(), user.getName(), user.getSurname());
+		return new RegisterResponse(
+				user.getId(),
+				user.getEmail(),
+				user.getName(),
+				user.getSurname()
+		);
 	}
 
 	@Override
@@ -163,6 +184,49 @@ public class AuthServiceImpl implements AuthService {
 
 		passwordResetTokenRepository.delete(passwordResetToken);
 		return req;
+	}
+
+	@Override
+	@Transactional
+	public void changePassword(final ChangePasswordRequest req) {
+		final User user = getCurrentUser();
+
+		if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPasswordHash())) {
+			throw new IllegalArgumentException("Current password is incorrect");
+		}
+
+		user.changePassword(passwordEncoder.encode(req.getNewPassword()));
+		userRepository.save(user);
+	}
+
+	@Override
+	@Transactional
+	public void updateProfile(final UpdateProfileRequest req) {
+		final User user = getCurrentUser();
+
+		if (!user.getEmail().equalsIgnoreCase(req.getEmail())
+				&& userRepository.existsByEmailIgnoreCase(req.getEmail())) {
+			throw new IllegalArgumentException("Email is already taken");
+		}
+
+		user.changeProfile(
+				req.getEmail(),
+				req.getName(),
+				req.getSurname()
+		);
+
+		userRepository.save(user);
+	}
+
+	private User getCurrentUser() {
+		final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+		if (auth == null || auth.getName() == null) {
+			throw new IllegalStateException("User is not authenticated");
+		}
+
+		return userRepository.findByEmailIgnoreCase(auth.getName())
+				.orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 	}
 
 	@Override

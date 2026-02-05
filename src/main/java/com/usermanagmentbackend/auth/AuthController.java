@@ -1,5 +1,6 @@
 package com.usermanagmentbackend.auth;
 
+import com.usermanagmentbackend.auth.dto.ChangePasswordRequest;
 import com.usermanagmentbackend.auth.dto.LoginRequest;
 import com.usermanagmentbackend.auth.dto.LogoutRequest;
 import com.usermanagmentbackend.auth.dto.RefreshTokenRequest;
@@ -7,6 +8,7 @@ import com.usermanagmentbackend.auth.dto.RegisterRequest;
 import com.usermanagmentbackend.auth.dto.RegisterResponse;
 import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
+import com.usermanagmentbackend.auth.dto.UpdateProfileRequest;
 import com.usermanagmentbackend.users.dto.RemindPasswordRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -61,5 +63,23 @@ public class AuthController {
 	public Map<String, String> remindPassword(@RequestBody @Valid final RemindPasswordRequest req) {
 		authService.remindPassword(req.email());
 		return Map.of("message", "If account exists, email was sent.");
+	}
+
+	@PostMapping("/changePassword")
+	@ResponseStatus(HttpStatus.ACCEPTED)
+	public Map<String, String> changePassword(
+			@RequestBody @Valid final ChangePasswordRequest req
+	) {
+		authService.changePassword(req);
+		return Map.of("message", "Password changed successfully.");
+	}
+
+	@PostMapping("/updateProfile")
+	@ResponseStatus(HttpStatus.ACCEPTED)
+	public Map<String, String> updateProfile(
+			@RequestBody @Valid final UpdateProfileRequest req
+	) {
+		authService.updateProfile(req);
+		return Map.of("message", "Profile updated successfully.");
 	}
 }

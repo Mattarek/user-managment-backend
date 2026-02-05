@@ -1,19 +1,19 @@
 package com.usermanagmentbackend.common;
 
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 public class ApiException extends RuntimeException {
-	private final HttpStatus httpStatus;
+	private final HttpStatusCode httpStatusCode;
 	private final String code;
 
-	public ApiException(final HttpStatus httpStatus, final String code, final String message) {
+	public ApiException(final HttpStatusCode httpStatusCode, final String code, final String message) {
 		super(message);
-		this.httpStatus = httpStatus;
+		this.httpStatusCode = httpStatusCode;
 		this.code = code;
 	}
 
-	public HttpStatus httpStatus() {
-		return httpStatus;
+	public HttpStatusCode httpStatus() {
+		return httpStatusCode;
 	}
 
 	public String code() {

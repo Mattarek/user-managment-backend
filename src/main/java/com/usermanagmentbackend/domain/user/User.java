@@ -39,6 +39,13 @@ public class User {
 		this.passwordHash = passwordHash;
 	}
 
+	public void changePassword(final String newPasswordHash) {
+		if (newPasswordHash == null || newPasswordHash.isBlank()) {
+			throw new IllegalArgumentException("Password hash cannot be null or blank");
+		}
+		passwordHash = newPasswordHash;
+	}
+
 	public UUID getId() {
 		return id;
 	}
@@ -47,16 +54,61 @@ public class User {
 		return email;
 	}
 
+	public void setEmail(final String email) {
+		if (email == null || email.isBlank()) {
+			throw new IllegalArgumentException("Email cannot be null or blank");
+		}
+		this.email = email.toLowerCase();
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
 	public String getName() {
 		return name;
+	}
+
+	public void setName(final String name) {
+		if (name == null || name.isBlank()) {
+			throw new IllegalArgumentException("Name cannot be null or blank");
+		}
+		this.name = name;
 	}
 
 	public String getSurname() {
 		return surname;
 	}
 
+	public void setSurname(final String surname) {
+		if (surname == null || surname.isBlank()) {
+			throw new IllegalArgumentException("Surname cannot be null or blank");
+		}
+		this.surname = surname;
+	}
+
+	public void changeProfile(final String email, final String name, final String surname) {
+		if (email == null || email.isBlank()) {
+			throw new IllegalArgumentException("Email cannot be null or blank");
+		}
+		if (name == null || name.isBlank()) {
+			throw new IllegalArgumentException("Name cannot be null or blank");
+		}
+		if (surname == null || surname.isBlank()) {
+			throw new IllegalArgumentException("Surname cannot be null or blank");
+		}
+
+		this.email = email.toLowerCase();
+		this.name = name;
+		this.surname = surname;
+	}
+
 	public String getPasswordHash() {
 		return passwordHash;
+	}
+
+	public void setPasswordHash(final String passwordHash) {
+		this.passwordHash = passwordHash;
 	}
 
 	public void setPassword(@Nullable final String passwordHash) {
