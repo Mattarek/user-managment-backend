@@ -7,6 +7,7 @@ import com.usermanagmentbackend.auth.dto.RegisterRequest;
 import com.usermanagmentbackend.auth.dto.RegisterResponse;
 import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
+import com.usermanagmentbackend.users.dto.RemindPasswordRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -51,5 +54,12 @@ public class AuthController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void resetPassword(@RequestBody final ResetPasswordRequest req) {
 		authService.resetPassword(req);
+	}
+
+	@PostMapping("/remind-password")
+	@ResponseStatus(HttpStatus.ACCEPTED)
+	public Map<String, String> remindPassword(@RequestBody @Valid final RemindPasswordRequest req) {
+		authService.remindPassword(req.email());
+		return Map.of("message", "If account exists, email was sent.");
 	}
 }

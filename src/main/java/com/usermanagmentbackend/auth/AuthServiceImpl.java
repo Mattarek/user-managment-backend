@@ -14,6 +14,7 @@ import com.usermanagmentbackend.domain.token.RefreshToken;
 import com.usermanagmentbackend.domain.token.RefreshTokenRepository;
 import com.usermanagmentbackend.domain.user.User;
 import com.usermanagmentbackend.domain.user.UserRepository;
+import com.usermanagmentbackend.mail.MailService;
 import com.usermanagmentbackend.security.JwtService;
 import com.usermanagmentbackend.util.TokenHasher;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,13 +39,19 @@ public class AuthServiceImpl implements AuthService {
 	private final SecureRandom secureRandom = new SecureRandom();
 	private final PasswordResetTokenRepository passwordResetTokenRepository;
 	private final int refreshTtlDays;
+	private final MailService mailService;
+
+	private final int resetTtlMinutes;
+	private final String resetLinkBase;
 
 	public AuthServiceImpl(
 			final UserRepository userRepository,
 			final RefreshTokenRepository refreshTokenRepository,
 			final PasswordEncoder passwordEncoder,
 			final JwtService jwtService, final PasswordResetTokenRepository passwordResetTokenRepository,
-			@Value("${app.jwt.refreshTtlDays}") final int refreshTtlDays
+			@Value("${app.jwt.refreshTtlDays}") final int refreshTtlDays, final MailService mailService,
+			@Value("${app.passwordReset.ttlMinutes}") final int resetTtlMinutes,
+			@Value("${app.passwordReset.linkBase}") final String resetLinkBase
 	) {
 		this.userRepository = userRepository;
 		this.refreshTokenRepository = refreshTokenRepository;
@@ -52,6 +59,9 @@ public class AuthServiceImpl implements AuthService {
 		this.jwtService = jwtService;
 		this.passwordResetTokenRepository = passwordResetTokenRepository;
 		this.refreshTtlDays = refreshTtlDays;
+		this.mailService = mailService;
+		this.resetTtlMinutes = resetTtlMinutes;
+		this.resetLinkBase = resetLinkBase;
 	}
 
 	@Override
@@ -127,12 +137,6 @@ public class AuthServiceImpl implements AuthService {
 		refreshTokenRepository.findByTokenHash(hash).ifPresent(rt -> rt.revoke(Instant.now()));
 	}
 
-	private String generateOpaqueToken() {
-		final byte[] buf = new byte[48];
-		secureRandom.nextBytes(buf);
-		return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
-	}
-
 	@Transactional
 	public ResetPasswordRequest resetPassword(final ResetPasswordRequest req) {
 		if (req == null || req.password() == null || req.token() == null) {
@@ -159,5 +163,25 @@ public class AuthServiceImpl implements AuthService {
 
 		passwordResetTokenRepository.delete(passwordResetToken);
 		return req;
+	}
+
+	@Override
+	@Transactional
+	public void remindPassword(final String email) {
+		userRepository.findByEmail(email.toLowerCase()).ifPresent(user -> {
+			final String raw = generateOpaqueToken();
+			final String hash = TokenHasher.sha256Hex(raw);
+			final Instant exp = Instant.now().plus(resetTtlMinutes, ChronoUnit.MINUTES);
+			passwordResetTokenRepository.save(new PasswordResetToken(user, hash, exp));
+
+			final String link = resetLinkBase + "/" + raw;
+			mailService.sendPasswordReset(user.getEmail(), link);
+		});
+	}
+
+	private String generateOpaqueToken() {
+		final byte[] buf = new byte[48];
+		secureRandom.nextBytes(buf);
+		return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
 	}
 }

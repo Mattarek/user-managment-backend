@@ -13,6 +13,8 @@ public interface AuthService {
 
 	RegisterResponse register(RegisterRequest req);
 
+	void remindPassword(String email);
+
 	TokenPairResponse login(LoginRequest req);
 
 	TokenPairResponse refresh(RefreshTokenRequest req);
