@@ -27,7 +27,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
@@ -250,12 +249,5 @@ public class AuthServiceImpl implements AuthService {
 		final byte[] buf = new byte[48];
 		secureRandom.nextBytes(buf);
 		return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
-	}
-
-	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	public class InvalidCurrentPasswordException extends RuntimeException {
-		public InvalidCurrentPasswordException() {
-			super("Current password is incorrect");
-		}
 	}
 }

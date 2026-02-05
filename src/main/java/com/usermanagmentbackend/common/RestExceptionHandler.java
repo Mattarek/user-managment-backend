@@ -1,5 +1,6 @@
 package com.usermanagmentbackend.common;
 
+import com.usermanagmentbackend.auth.InvalidCurrentPasswordException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,5 +41,21 @@ public class RestExceptionHandler {
 				req.getRequestURI()
 		);
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+	}
+
+	@ExceptionHandler(InvalidCurrentPasswordException.class)
+	public ResponseEntity<ApiError> handleInvalidCurrentPassword(
+			final InvalidCurrentPasswordException ex,
+			final HttpServletRequest req
+	) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+				new ApiError(
+						Instant.now(),
+						400,
+						"INVALID_CURRENT_PASSWORD",
+						ex.getMessage(),
+						req.getRequestURI()
+				)
+		);
 	}
 }
