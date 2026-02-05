@@ -33,7 +33,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 			final String token = auth.substring(7);
 			final CurrentUser cu = jwtService.parseAccessToken(token);
 
-			log.debug("REQ {} {} Authorization={}", request.getMethod(), request.getRequestURI(), auth != null);
+			log.debug("REQ {} {} AuthorizationHeader={}", request.getMethod(), request.getRequestURI(), auth);
+
 			if (cu != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 				final var principal = cu;
 				final var authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));

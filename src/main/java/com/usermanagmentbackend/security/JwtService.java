@@ -17,9 +17,9 @@ import java.util.UUID;
 @Service
 public class JwtService {
 
+	private static final int SECRET_LENGTH = 32;
 	private final SecretKey key;
 	private final int accessTtlMinutes;
-	private final int SECRET_LENGTH = 32;
 
 	public JwtService(
 			@Value("${app.jwt.secret}") final String secret,
@@ -55,6 +55,11 @@ public class JwtService {
 
 			final String email = c.getSubject();
 			final String uid = c.get("uid", String.class);
+
+			if (email == null || uid == null) {
+				return null;
+			}
+
 			return new CurrentUser(UUID.fromString(uid), email);
 		} catch (final JwtException | IllegalArgumentException e) {
 			return null;
