@@ -27,12 +27,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -192,7 +194,7 @@ public class AuthServiceImpl implements AuthService {
 		final User user = getCurrentUser();
 
 		if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPasswordHash())) {
-			throw new IllegalArgumentException("Current password is incorrect");
+			throw new InvalidCurrentPasswordException();
 		}
 
 		user.changePassword(passwordEncoder.encode(req.getNewPassword()));
@@ -220,7 +222,7 @@ public class AuthServiceImpl implements AuthService {
 
 	public User getCurrentUser() {
 		final var auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null || !(auth.getPrincipal() instanceof CurrentUser(java.util.UUID id, String email))) {
+		if (auth == null || !(auth.getPrincipal() instanceof CurrentUser(final UUID id, final String email))) {
 			throw new IllegalStateException("Authenticated user not found");
 		}
 
@@ -248,5 +250,12 @@ public class AuthServiceImpl implements AuthService {
 		final byte[] buf = new byte[48];
 		secureRandom.nextBytes(buf);
 		return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
+	}
+
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	public class InvalidCurrentPasswordException extends RuntimeException {
+		public InvalidCurrentPasswordException() {
+			super("Current password is incorrect");
+		}
 	}
 }
