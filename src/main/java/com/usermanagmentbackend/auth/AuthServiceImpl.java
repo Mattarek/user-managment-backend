@@ -221,6 +221,10 @@ public class AuthServiceImpl implements AuthService {
 	private User getCurrentUser() {
 		final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
+		System.out.println("AUTH name = " + auth.getName());
+		System.out.println("AUTH principal = " + auth.getPrincipal());
+		System.out.println("AUTH class = " + auth.getPrincipal().getClass());
+
 		if (auth == null || auth.getName() == null) {
 			throw new IllegalStateException("User is not authenticated");
 		}
