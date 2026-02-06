@@ -8,8 +8,8 @@ import com.usermanagmentbackend.auth.dto.RegisterRequest;
 import com.usermanagmentbackend.auth.dto.RegisterResponse;
 import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
-import com.usermanagmentbackend.auth.dto.UpdateAvatarRequest;
 import com.usermanagmentbackend.auth.dto.UpdateProfileRequest;
+import com.usermanagmentbackend.auth.dto.UploadAvatarResponse;
 import com.usermanagmentbackend.users.dto.RemindPasswordRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -92,7 +92,7 @@ public class AuthController {
 	@PatchMapping("/avatarUpdate")
 	@ResponseStatus(HttpStatus.ACCEPTED)
 	public Map<String, String> updateAvatar(
-			@RequestBody @Valid final UpdateAvatarRequest request
+			@RequestBody @Valid final UploadAvatarResponse request
 	) {
 		authService.updateAvatar(request);
 		return Map.of("message", "Avatar updated successfully.");

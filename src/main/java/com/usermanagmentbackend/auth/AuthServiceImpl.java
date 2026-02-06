@@ -8,8 +8,8 @@ import com.usermanagmentbackend.auth.dto.RegisterRequest;
 import com.usermanagmentbackend.auth.dto.RegisterResponse;
 import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
-import com.usermanagmentbackend.auth.dto.UpdateAvatarRequest;
 import com.usermanagmentbackend.auth.dto.UpdateProfileRequest;
+import com.usermanagmentbackend.auth.dto.UploadAvatarResponse;
 import com.usermanagmentbackend.common.ApiException;
 import com.usermanagmentbackend.domain.reset.PasswordResetToken;
 import com.usermanagmentbackend.domain.reset.PasswordResetTokenRepository;
@@ -28,8 +28,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -254,7 +260,7 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Transactional
-	public void updateAvatar(final UpdateAvatarRequest request) {
+	public void updateAvatar(final UploadAvatarResponse request) {
 		final var auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth == null || !(auth.getPrincipal() instanceof final CurrentUser currentUser)) {
 			throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized");
@@ -265,7 +271,29 @@ public class AuthServiceImpl implements AuthService {
 						HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized"
 				));
 
-		user.setAvatarUrl(request.avatarUrl());
+		user.setAvatarUrl(request.url());
 		userRepository.save(user);
+	}
+
+	@Override
+	public UploadAvatarResponse uploadAvatar(final MultipartFile file) {
+		if (file.isEmpty()) {
+			throw new IllegalArgumentException("File is empty");
+		}
+
+		try {
+			final String uploadDir = "uploads/avatars/";
+			Files.createDirectories(Paths.get(uploadDir));
+			final String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+			final Path filePath = Paths.get(uploadDir, filename);
+
+			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+			final String fileUrl = "/uploads/avatars/" + filename;
+
+			return new UploadAvatarResponse(fileUrl);
+		} catch (final IOException e) {
+			throw new RuntimeException("Failed to upload avatar", e);
+		}
 	}
 }
