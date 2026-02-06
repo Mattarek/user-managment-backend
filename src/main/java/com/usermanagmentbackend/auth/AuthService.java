@@ -11,6 +11,7 @@ import com.usermanagmentbackend.auth.dto.TokenPairResponse;
 import com.usermanagmentbackend.auth.dto.UpdateAvatarRequest;
 import com.usermanagmentbackend.auth.dto.UpdateProfileRequest;
 import jakarta.validation.Valid;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface AuthService {
 	ResetPasswordRequest resetPassword(ResetPasswordRequest req);
@@ -30,4 +31,6 @@ public interface AuthService {
 	void logout(LogoutRequest req);
 
 	void updateAvatar(@Valid UpdateAvatarRequest request);
+
+	Object uploadAvatar(MultipartFile file);
 }
