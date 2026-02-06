@@ -276,20 +276,41 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
+	@Transactional
 	public UploadAvatarResponse uploadAvatar(final MultipartFile file) {
-		if (file.isEmpty()) {
+		final Path AVATARS_DIR = Paths.get("/opt/apps/myapi/uploads/avatars");
+		final String AVATAR_PUBLIC_PREFIX = "/uploads/avatars/";
+
+		if (file == null || file.isEmpty()) {
 			throw new IllegalArgumentException("File is empty");
 		}
 
+		final var auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth == null || !(auth.getPrincipal() instanceof final CurrentUser currentUser)) {
+			throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized");
+		}
+
+		final var user = userRepository.findByEmail(currentUser.email().toLowerCase())
+				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized"));
+
 		try {
-			final String uploadDir = "uploads/avatars/";
-			Files.createDirectories(Paths.get(uploadDir));
-			final String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
-			final Path filePath = Paths.get(uploadDir, filename);
+			Files.createDirectories(AVATARS_DIR);
+
+			final String ext = switch (file.getContentType()) {
+				case "image/jpeg" -> "jpg";
+				case "image/png" -> "png";
+				case "image/webp" -> "webp";
+				default -> throw new IllegalArgumentException("Unsupported file type: " + file.getContentType());
+			};
+
+			final String filename = user.getId() + "." + ext;
+			final Path filePath = AVATARS_DIR.resolve(filename);
 
 			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-			final String fileUrl = "/uploads/avatars/" + filename;
+			final String fileUrl = AVATAR_PUBLIC_PREFIX + filename;
+			user.setAvatarUrl(fileUrl);
+			userRepository.save(user);
 
 			return new UploadAvatarResponse(fileUrl);
 		} catch (final IOException e) {
