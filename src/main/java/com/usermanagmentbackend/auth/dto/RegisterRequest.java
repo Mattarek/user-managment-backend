@@ -10,5 +10,6 @@ public record RegisterRequest(
 		@NotBlank @Size(min = 2) String surname,
 		@NotBlank @Size(min = 10) String password,
 		@NotBlank @Size(min = 10) String repeatedPassword
+
 ) {
 }

@@ -9,7 +9,7 @@ public class ChangePasswordRequest {
 	private String currentPassword;
 
 	@NotBlank
-	@Size(min = 8)
+	@Size(min = 10)
 	private String newPassword;
 
 	public String getCurrentPassword() {

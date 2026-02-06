@@ -28,6 +28,8 @@ public class User {
 	private String surname;
 	@Column(nullable = false, length = 200)
 	private String passwordHash;
+	@Column(name = "avatar_url")
+	private String avatarUrl;
 
 	protected User() {
 	}
@@ -116,5 +118,9 @@ public class User {
 			throw new IllegalArgumentException("Password hash cannot be null or blank");
 		}
 		this.passwordHash = passwordHash;
+	}
+
+	public String getAvatarUrl() {
+		return avatarUrl;
 	}
 }

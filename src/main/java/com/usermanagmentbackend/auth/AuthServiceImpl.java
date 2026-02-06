@@ -100,7 +100,8 @@ public class AuthServiceImpl implements AuthService {
 				user.getId(),
 				user.getEmail(),
 				user.getName(),
-				user.getSurname()
+				user.getSurname(),
+				user.getAvatarUrl()
 		);
 	}
 
