@@ -8,6 +8,7 @@ import com.usermanagmentbackend.auth.dto.RegisterRequest;
 import com.usermanagmentbackend.auth.dto.RegisterResponse;
 import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
+import com.usermanagmentbackend.auth.dto.UpdateAvatarRequest;
 import com.usermanagmentbackend.auth.dto.UpdateProfileRequest;
 import com.usermanagmentbackend.common.ApiException;
 import com.usermanagmentbackend.domain.reset.PasswordResetToken;
@@ -250,5 +251,21 @@ public class AuthServiceImpl implements AuthService {
 		final byte[] buf = new byte[48];
 		secureRandom.nextBytes(buf);
 		return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
+	}
+
+	@Transactional
+	public void updateAvatar(final UpdateAvatarRequest request) {
+		final var auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth == null || !(auth.getPrincipal() instanceof final CurrentUser currentUser)) {
+			throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized");
+		}
+
+		final var user = userRepository.findByEmail(currentUser.email().toLowerCase())
+				.orElseThrow(() -> new ApiException(
+						HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized"
+				));
+
+		user.setAvatarUrl(request.avatarUrl());
+		userRepository.save(user);
 	}
 }

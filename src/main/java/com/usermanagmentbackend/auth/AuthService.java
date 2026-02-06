@@ -8,7 +8,9 @@ import com.usermanagmentbackend.auth.dto.RegisterRequest;
 import com.usermanagmentbackend.auth.dto.RegisterResponse;
 import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
+import com.usermanagmentbackend.auth.dto.UpdateAvatarRequest;
 import com.usermanagmentbackend.auth.dto.UpdateProfileRequest;
+import jakarta.validation.Valid;
 
 public interface AuthService {
 	ResetPasswordRequest resetPassword(ResetPasswordRequest req);
@@ -26,4 +28,6 @@ public interface AuthService {
 	TokenPairResponse refresh(RefreshTokenRequest req);
 
 	void logout(LogoutRequest req);
+
+	void updateAvatar(@Valid UpdateAvatarRequest request);
 }

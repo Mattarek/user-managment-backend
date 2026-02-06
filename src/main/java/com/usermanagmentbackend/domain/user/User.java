@@ -123,4 +123,8 @@ public class User {
 	public String getAvatarUrl() {
 		return avatarUrl;
 	}
+
+	public void setAvatarUrl(final String avatarUrl) {
+		this.avatarUrl = avatarUrl;
+	}
 }
