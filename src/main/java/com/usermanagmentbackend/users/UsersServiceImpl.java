@@ -31,6 +31,6 @@ public class UsersServiceImpl implements UsersService {
 		final var user = userRepository.findByEmail(currentUser.email().toLowerCase())
 				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized"));
 
-		return new MeResponse(user.getEmail(), user.getEmail(), user.getName(), user.getSurname());
+		return new MeResponse(user.getEmail(), user.getEmail(), user.getName(), user.getSurname(), user.getAvatarUrl());
 	}
 }
