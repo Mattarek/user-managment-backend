@@ -12,8 +12,14 @@ import com.usermanagmentbackend.auth.dto.UpdateProfileRequest;
 import com.usermanagmentbackend.auth.dto.UploadAvatarResponse;
 import com.usermanagmentbackend.users.dto.RemindPasswordRequest;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,6 +30,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 @RestController
@@ -102,5 +112,27 @@ public class AuthController {
 	public Map<String, String> uploadAvatar(@RequestParam("file") final MultipartFile file) {
 		final String url = authService.uploadAvatar(file).toString();
 		return Map.of("url", url);
+	}
+
+	@GetMapping("/avatar/show")
+	public ResponseEntity<Resource> getMyAvatar(
+			final Authentication authentication
+	) throws IOException {
+		final Path avatar =
+				Paths.get("/opt/apps/myapi/uploads/avatars");
+		final String userId = authentication.getName();
+
+		final Path avatarPath = avatar.resolve(userId + ".png");
+
+		if (!Files.exists(avatarPath)) {
+			return ResponseEntity.notFound().build();
+		}
+
+		final Resource resource = new UrlResource(avatarPath.toUri());
+
+		return ResponseEntity.ok()
+				.contentType(MediaType.IMAGE_PNG)
+				.cacheControl(CacheControl.noCache())
+				.body(resource);
 	}
 }
