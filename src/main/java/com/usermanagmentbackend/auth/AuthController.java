@@ -118,6 +118,7 @@ public class AuthController {
 	public ResponseEntity<Resource> getMyAvatar(
 			final Authentication authentication
 	) throws IOException {
+		System.out.println(authentication);
 		final Path avatar =
 				Paths.get("/opt/apps/myapi/uploads/avatars");
 		final String userId = authentication.getName();
