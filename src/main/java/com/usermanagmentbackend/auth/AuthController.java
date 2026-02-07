@@ -10,6 +10,7 @@ import com.usermanagmentbackend.auth.dto.ResetPasswordRequest;
 import com.usermanagmentbackend.auth.dto.TokenPairResponse;
 import com.usermanagmentbackend.auth.dto.UpdateProfileRequest;
 import com.usermanagmentbackend.auth.dto.UploadAvatarResponse;
+import com.usermanagmentbackend.security.CurrentUser;
 import com.usermanagmentbackend.users.dto.RemindPasswordRequest;
 import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
@@ -35,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -118,11 +120,12 @@ public class AuthController {
 	public ResponseEntity<Resource> getMyAvatar(
 			final Authentication authentication
 	) throws IOException {
-		System.out.println(authentication);
 		final Path avatar =
 				Paths.get("/opt/apps/myapi/uploads/avatars");
-		final String userId = authentication.getName();
+		final CurrentUser currentUser =
+				(CurrentUser) authentication.getPrincipal();
 
+		final UUID userId = currentUser.id();
 		final Path avatarPath = avatar.resolve(userId + ".png");
 
 		if (!Files.exists(avatarPath)) {
