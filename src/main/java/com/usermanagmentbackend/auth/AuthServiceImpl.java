@@ -22,8 +22,11 @@ import com.usermanagmentbackend.security.CurrentUser;
 import com.usermanagmentbackend.security.JwtService;
 import com.usermanagmentbackend.util.TokenHasher;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,6 +45,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -53,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
 	private final PasswordResetTokenRepository passwordResetTokenRepository;
 	private final int refreshTtlDays;
 	private final MailService mailService;
-
+	private final Path avatarsDir;
 	private final int resetTtlMinutes;
 	private final String resetLinkBase;
 
@@ -64,7 +70,8 @@ public class AuthServiceImpl implements AuthService {
 			final JwtService jwtService, final PasswordResetTokenRepository passwordResetTokenRepository,
 			@Value("${app.jwt.refreshTtlDays}") final int refreshTtlDays, final MailService mailService,
 			@Value("${app.passwordReset.ttlMinutes}") final int resetTtlMinutes,
-			@Value("${app.passwordReset.linkBase}") final String resetLinkBase
+			@Value("${app.passwordReset.linkBase}") final String resetLinkBase,
+			@Value("/opt/apps/myapi/uploads/avatars") final String avatarsDir
 	) {
 		this.userRepository = userRepository;
 		this.refreshTokenRepository = refreshTokenRepository;
@@ -75,6 +82,68 @@ public class AuthServiceImpl implements AuthService {
 		this.mailService = mailService;
 		this.resetTtlMinutes = resetTtlMinutes;
 		this.resetLinkBase = resetLinkBase;
+		this.avatarsDir = Paths.get(avatarsDir);
+	}
+
+	@Override
+	public Object uploadAvatar(final MultipartFile file) {
+		// 1) Walidacja pliku
+		if (file == null || file.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty");
+		}
+
+		// Spójność z /avatar/show -> zapisujemy jako .png
+		final String contentType = file.getContentType();
+		if (contentType == null || !contentType.equalsIgnoreCase("image/png")) {
+			throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Only PNG is allowed");
+		}
+
+		// limit np. 5MB (możesz zmienić)
+		final long maxSize = 5L * 1024 * 1024;
+		if (file.getSize() > maxSize) {
+			throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Max file size is 5MB");
+		}
+
+		// 2) Wyciągnięcie userId z SecurityContext
+		final UUID userId = getCurrentUserId();
+
+		// 3) Zapis na dysk: {uuid}.png (atomowo przez temp + move)
+		try {
+			Files.createDirectories(avatarsDir);
+
+			final Path target = avatarsDir.resolve(userId + ".png");
+			final Path tmp = avatarsDir.resolve(userId + ".png.tmp");
+
+			// copy -> tmp (nadpisz)
+			Files.copy(file.getInputStream(), tmp, StandardCopyOption.REPLACE_EXISTING);
+
+			// move tmp -> target (nadpisz, atomic jeśli FS pozwala)
+			try {
+				Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			} catch (final AtomicMoveNotSupportedException ex) {
+				Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+			}
+		} catch (final IOException e) {
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to save avatar", e);
+		}
+
+		// 4) Zwróć URL do odczytu (relative; front sobie dołączy baseURL)
+		// (dodałem cache-busting, żeby po uploadzie od razu widać było zmianę)
+		return "/api/auth/avatar/show?ts=" + System.currentTimeMillis();
+	}
+
+	private UUID getCurrentUserId() {
+		final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth == null || auth.getPrincipal() == null) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
+		}
+
+		final Object principal = auth.getPrincipal();
+		if (!(principal instanceof final CurrentUser currentUser) || currentUser.id() == null) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid principal");
+		}
+
+		return currentUser.id();
 	}
 
 	@Override
@@ -276,45 +345,18 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
-	@Transactional
-	public UploadAvatarResponse uploadAvatar(final MultipartFile file) {
-		final Path AVATARS_DIR = Paths.get("/opt/apps/myapi/uploads/avatars");
-		final String AVATAR_PUBLIC_PREFIX = "/uploads/avatars/";
+	public Optional<Resource> getAvatarForUser(final UUID userId) {
+		final Path avatarPath = avatarsDir.resolve(userId + ".png");
 
-		if (file == null || file.isEmpty()) {
-			throw new IllegalArgumentException("File is empty");
+		if (!Files.exists(avatarPath) || !Files.isRegularFile(avatarPath)) {
+			return Optional.empty();
 		}
-
-		final var auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null || !(auth.getPrincipal() instanceof final CurrentUser currentUser)) {
-			throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized");
-		}
-
-		final var user = userRepository.findByEmail(currentUser.email().toLowerCase())
-				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Unauthorized"));
 
 		try {
-			Files.createDirectories(AVATARS_DIR);
-
-			final String ext = switch (file.getContentType()) {
-				case "image/jpeg" -> "jpg";
-				case "image/png" -> "png";
-				case "image/webp" -> "webp";
-				default -> throw new IllegalArgumentException("Unsupported file type: " + file.getContentType());
-			};
-
-			final String filename = user.getId() + "." + ext;
-			final Path filePath = AVATARS_DIR.resolve(filename);
-
-			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-			final String fileUrl = AVATAR_PUBLIC_PREFIX + filename;
-			user.setAvatarUrl(fileUrl);
-			userRepository.save(user);
-
-			return new UploadAvatarResponse(fileUrl);
-		} catch (final IOException e) {
-			throw new RuntimeException("Failed to upload avatar", e);
+			final Resource resource = new UrlResource(avatarPath.toUri());
+			return Optional.of(resource);
+		} catch (final MalformedURLException e) {
+			throw new IllegalStateException("Invalid avatar path: " + avatarPath, e);
 		}
 	}
 }
